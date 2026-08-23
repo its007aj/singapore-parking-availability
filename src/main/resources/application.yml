@@ -1,0 +1,88 @@
+spring:
+  application:
+    name: parking-finder
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:parking}
+    username: ${DB_USER:parking}
+    password: ${DB_PASSWORD:parking}
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+  jpa:
+    # schema.sql is the source of truth; ddl-auto only validates entity mappings against
+    # it rather than generating/altering the schema. Runs after schema.sql by default
+    # (Spring Boot only defers to after Hibernate DDL when defer-datasource-initialization
+    # is set, which it isn't here).
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 100
+        order_inserts: true
+        order_updates: true
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: 8080
+
+parking:
+  static-data:
+    dataset-id: d_23f946fa557947f93a8043bbef41dd09
+    poll-download-base-url: https://api-open.data.gov.sg/v1/public/api/datasets
+    fallback-resource: classpath:data/hdb-carpark-information.csv
+    request-timeout-ms: 10000
+  availability:
+    url: https://api.data.gov.sg/v1/transport/carpark-availability
+    poll-interval-ms: 60000
+    initial-delay-ms: 0
+    request-timeout-ms: 5000
+    stale-after-minutes: 15
+
+resilience4j:
+  retry:
+    instances:
+      carparkAvailability:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+      carparkStaticData:
+        max-attempts: 3
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+  circuitbreaker:
+    instances:
+      carparkAvailability:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+      carparkStaticData:
+        sliding-window-size: 5
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  health:
+    defaults:
+      enabled: true
+
+logging:
+  level:
+    com.carpark.singapore: INFO

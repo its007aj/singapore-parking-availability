@@ -1,0 +1,9 @@
+target
+.git
+.idea
+.claude
+.vscode
+*.log
+assgn.pdf
+CLAUDE.md
+HELP.md
