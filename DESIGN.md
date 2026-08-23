@@ -15,8 +15,8 @@ raw SVY21 and converting per-request — it's a fixed, one-time transform per ca
 downstream code (distance calculation, the API response) should only ever deal in one
 coordinate system.
 
-**Verification approach:** this is flagged in the brief as one of the parts most likely to
-break, so I didn't just trust the Java port. I independently reimplemented the same
+**Verification approach:** this is one of the parts most likely to break silently, so I
+didn't just trust the Java port. I independently reimplemented the same
 published formula in Python and used *those* outputs as the expected values in the Java
 unit tests — so the tests catch a transcription bug in the Java code, rather than just
 confirming the code agrees with itself. I also ran the transform over the *entire* bundled
@@ -105,7 +105,7 @@ client call in a plain `try/catch`. On failure, it logs a warning and **does not
   from 20 minutes ago is still much more useful to a driver than no information at all;
   hiding it converts "slightly outdated" into "looks like there's no parking here," which
   is a worse user experience for a small accuracy gain.
-- One thing I did **not** build, given the time-box: a metric/alert for "the last N polls
+- One thing I did **not** build yet: a metric/alert for "the last N polls
   have all failed" (i.e., whole-system staleness, not per-car-park). Right now that's only
   visible in logs. If most/all rows are stale, every result the API returns will correctly
   show `stale: true`, so the API is honest about it — it's just not paged on anywhere yet.
@@ -168,8 +168,8 @@ need (nobody wants page 4 of nearby car parks); I'd revisit this if a use case e
 
 **Most challenging decision:** deciding how much resilience machinery to add, and where.
 It was tempting to wrap every external call in the same retry/circuit-breaker/fallback
-pattern by default, but that's exactly the kind of thing that's easy to over-build in a
-timeboxed exercise — more moving parts than the actual failure modes justify. The version
+pattern by default, but that's exactly the kind of thing that's easy to over-build —
+more moving parts than the actual failure modes justify. The version
 that shipped keeps that machinery to the two places it earns its keep (the two live HTTP
 calls), keeps the *decision* about what to do on failure at the business layer (a plain
 `try/catch` in the sync service) rather than buried in a client, and skips it everywhere
@@ -202,12 +202,12 @@ for an hour" — right now both look identical from outside the system.
 
 ## What I deprioritized, and why
 
-- **Whole-system staleness/alerting** (above) — per-record staleness covers the assignment's
-  explicit requirement; system-level monitoring is a real gap but a smaller one, and fitting
-  the exercise's time-box meant choosing where to stop.
+- **Whole-system staleness/alerting** (above) — per-record staleness covers the core
+  requirement to handle stale data; system-level monitoring is a real gap but a smaller
+  one, and time constraints meant choosing where to stop.
 - **Full pagination** for `/nearby` — a capped, sorted top-N response is the right shape for
   the actual use case (see "Volume of results" above); true pagination isn't built.
 - **PostGIS/spatial indexing** — unnecessary at Singapore's scale (~2,000 car parks); the
-  in-memory haversine approach is simpler and was worth keeping simple for this exercise.
+  in-memory haversine approach is simpler and was worth keeping simple at this scale.
 - **A background job to refresh the static dataset without a restart** — it currently
   refreshes on every app start, which is enough for a car park list that changes rarely.

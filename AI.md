@@ -16,8 +16,8 @@ things:
 3. **A pre-commit review requirement** — naming, design-pattern fit, and refactoring
    opportunities get surfaced (not silently applied) before any commit.
 
-I also pasted the full assignment brief into `CLAUDE.md` up front, so the agent had the
-complete requirements/rubric in context for every subsequent turn without me re-explaining
+I also pasted the full project brief into `CLAUDE.md` up front, so the agent had the
+complete requirements in context for every subsequent turn without me re-explaining
 scope each time.
 
 ## How I split the work
@@ -66,12 +66,11 @@ is described below.
 
 ## How I verified the output
 
-Given the assignment's own framing — "we want to see that you verify behaviour, not just
-trust generated code" — I leaned much more heavily on **running the real thing** than on
-reading source line by line:
+Verifying behaviour matters more than trusting generated code, so I leaned much more
+heavily on **running the real thing** than on reading source line by line:
 
 - **Independent-implementation cross-checks**, not just plausible-looking tests. For the
-  SVY21→WGS84 coordinate transform (flagged in the brief as likely to break), the agent
+  SVY21→WGS84 coordinate transform (a part known to be error-prone), the agent
   didn't write a Java implementation and then write tests that just confirm the Java
   agrees with itself — it independently reimplemented the same published formula in
   Python first, and used *those* numbers as the expected test values. That's a
@@ -86,7 +85,7 @@ reading source line by line:
   disposable Postgres container, ran the actual app against it, hit the *real*
   data.gov.sg endpoints (not stubs), inspected raw rows with `psql`, then tore the
   container down. The final step ran a clean `docker compose build && up` and curled the
-  API from the host, exactly as a reviewer would.
+  API from the host, exactly as anyone running this for the first time would.
 - **The unit test suite** (26 tests by the end) — but I treated it as necessary, not
   sufficient, given how many of the real bugs below it structurally could not have caught.
 
